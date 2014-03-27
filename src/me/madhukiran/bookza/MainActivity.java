@@ -5,6 +5,15 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.params.ClientPNames;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -12,27 +21,37 @@ import org.jsoup.select.Elements;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
 
 	String url = "http://www.bookza.org/s?q=";
 	ProgressDialog mProgressDialog;
 	EditText editView;
-
+	ListView list;
+    CustomAdapter adapter;
+    public  MainActivity CustomListView = null;
+    ArrayList<book> books = new ArrayList<book>();
+    String LocationHeader;
+    
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
+		CustomListView = this;
+		
 		editView = (EditText) findViewById(R.id.edit_message);
-
 		/** For search key in keyboard **/
 		editView.setOnEditorActionListener(new OnEditorActionListener() {
 			@Override
@@ -53,7 +72,6 @@ public class MainActivity extends Activity {
 				return false;
 			}
 		});
-
 	}
 
 	@Override
@@ -65,7 +83,6 @@ public class MainActivity extends Activity {
 
 	private class getData extends AsyncTask<Void, Void, Void> {
 		// String output = "";
-		ArrayList<book> books = new ArrayList<book>();
 
 		@Override
 		protected void onPreExecute() {
@@ -149,10 +166,99 @@ public class MainActivity extends Activity {
 
 			return null;
 		}
-
+		
 		@Override
 		protected void onPostExecute(Void result) {
+			Resources res =getResources();
+	        list= ( ListView )findViewById( R.id.list );  // List defined in XML ( See Below )
+	         
+	        /**************** Create Custom Adapter *********/
+	        adapter=new CustomAdapter( CustomListView, books,res );
+	        list.setAdapter( adapter );
 			mProgressDialog.dismiss();
 		}
 	}
+
+	public void onItemClick(int mPosition) {
+		book tempValues = ( book ) books.get(mPosition);
+//		Toast.makeText(CustomListView,tempValues.getDlink()+"\n"+tempValues.getLink(),
+//        Toast.LENGTH_LONG).show();
+		
+		new getUrl().execute(tempValues);
+		
+	}
+
+	private class getUrl extends AsyncTask<book, Void, Void> {
+		// String output = "";
+
+		@Override
+		protected void onPreExecute() {
+			super.onPreExecute();
+			mProgressDialog = new ProgressDialog(MainActivity.this);
+			mProgressDialog.setTitle("Android Basic JSoup Tutorial");
+			mProgressDialog.setMessage("Loading...");
+			mProgressDialog.setIndeterminate(false);
+			mProgressDialog.show();
+		}
+
+		@Override
+		protected Void doInBackground(book... params) {
+			book tempValues = params[0];
+			try {
+	            HttpClient client = new DefaultHttpClient(); 
+	            client.getParams().setParameter("http.protocol.version",
+	                    HttpVersion.HTTP_1_0);
+	            client.getParams().setParameter(ClientPNames.HANDLE_REDIRECTS, false);
+				String getURL = tempValues.getDlink();
+	            HttpGet get = new HttpGet(getURL);
+	            
+	            get.setHeader("Accept", "*/*");
+	            get.setHeader("Accept-Encoding", "gzip,deflate,sdch");
+	            get.setHeader("Accept-Language", "en-US,en;q=0.8,te;q=0.6,en-GB;q=0.4,hi;q=0.2");
+	            get.setHeader("Referer", url);
+	            get.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.154 Safari/537.36");
+	            
+	            HttpResponse responseGet = client.execute(get);  
+	            HttpEntity resEntityGet = responseGet.getEntity();
+	            
+	            Header[] headers = responseGet.getAllHeaders();
+	        	for (Header header : headers) {
+	        		System.out.println("Key : " + header.getName() 
+	        		      + " ,Value : " + header.getValue());
+	        	}
+	        	LocationHeader = responseGet.getFirstHeader("location").getValue();
+//	            
+//	            if (resEntityGet != null) {  
+//	                //do something with the response
+//	            	String LocationHeader = responseGet.getFirstHeader("location").getValue();
+//	                Log.i("GET ",EntityUtils.toString(resEntityGet));
+//	                Toast.makeText(CustomListView,LocationHeader,
+//	                        Toast.LENGTH_LONG).show();
+//	                    }
+//	            else {
+//	            	Toast.makeText(CustomListView,"apparently nothing happened",
+//	                        Toast.LENGTH_LONG).show();
+//	            }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+			return null;
+			
+		}
+		@Override
+		protected void onPostExecute(Void result) {
+            Toast.makeText(CustomListView,LocationHeader,
+                    Toast.LENGTH_LONG).show();
+			Resources res =getResources();
+	        list= ( ListView )findViewById( R.id.list );  // List defined in XML ( See Below )
+	         
+	        /**************** Create Custom Adapter *********/
+	        adapter=new CustomAdapter( CustomListView, books,res );
+	        list.setAdapter( adapter );
+			mProgressDialog.dismiss();
+		}
+	}
+	
 }
+
+
