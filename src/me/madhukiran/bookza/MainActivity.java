@@ -1,5 +1,6 @@
 package me.madhukiran.bookza;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -13,17 +14,21 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.app.DownloadManager.Request;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.res.Resources;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.inputmethod.EditorInfo;
@@ -34,7 +39,9 @@ import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
-
+	
+	String servicestring = Context.DOWNLOAD_SERVICE;
+    DownloadManager downloadmanager;
 	String url = "http://www.bookza.org/s?q=";
 	ProgressDialog mProgressDialog;
 	EditText editView;
@@ -59,6 +66,8 @@ public class MainActivity extends Activity {
 					android.view.KeyEvent event) {
 				if (actionId == EditorInfo.IME_ACTION_SEARCH) {
 					String message = editView.getText().toString();
+					books.clear(); 
+					url = "http://www.bookza.org/s?q=";
 					try {
 						url = url + URLEncoder.encode(message, "UTF-8")
 								+ "&t=0";
@@ -183,8 +192,24 @@ public class MainActivity extends Activity {
 		book tempValues = ( book ) books.get(mPosition);
 //		Toast.makeText(CustomListView,tempValues.getDlink()+"\n"+tempValues.getLink(),
 //        Toast.LENGTH_LONG).show();
-		
-		new getUrl().execute(tempValues);
+		File direct = new File(Environment.getExternalStorageDirectory()
+                + "/BookZa");
+
+        if (!direct.exists()) {
+            direct.mkdirs();
+        }
+		// new getUrl().execute(tempValues);
+	    downloadmanager = (DownloadManager) getSystemService(servicestring);
+	    Uri uri = Uri
+	      .parse(tempValues.dlink);
+	    DownloadManager.Request request = new Request(uri);
+	    request.addRequestHeader("Accept", "*/*");
+	    request.addRequestHeader("Accept-Encoding", "gzip,deflate,sdch");
+	    request.addRequestHeader("Accept-Language", "en-US,en;q=0.8,te;q=0.6,en-GB;q=0.4,hi;q=0.2");
+	    request.addRequestHeader("Referer", url);
+	    request.addRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.154 Safari/537.36");
+	    request.setDestinationInExternalPublicDir("/BookZa", "test."+tempValues.getType());
+	    Long reference = downloadmanager.enqueue(request);
 		
 	}
 
