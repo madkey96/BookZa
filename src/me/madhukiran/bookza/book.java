@@ -9,7 +9,14 @@ public class book {
 	String dlink;
 	String lang;
 	String size;
+	int progress;
 	
+	public int getProgress() {
+		return progress;
+	}
+	public void setProgress(int progress) {
+		this.progress = progress;
+	}
 	public String getSize() {
 		return size;
 	}

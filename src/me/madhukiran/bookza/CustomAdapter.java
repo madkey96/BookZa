@@ -10,7 +10,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.BaseAdapter;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 /********* Adapter class extends with BaseAdapter and implements with OnClickListener ************/
@@ -23,6 +26,7 @@ public class CustomAdapter extends BaseAdapter   implements OnClickListener {
          public Resources res;
          book tempValues=null;
          int i=0;
+         int lastPosition=0;
           
          /*************  CustomAdapter Constructor *****************/
          public CustomAdapter(Activity a, ArrayList<book> d,Resources resLocal) {
@@ -61,6 +65,7 @@ public class CustomAdapter extends BaseAdapter   implements OnClickListener {
              public TextView author;
              public TextView type;
              public TextView size;
+             public ProgressBar mProgressbar1;
       
          }
       
@@ -82,7 +87,7 @@ public class CustomAdapter extends BaseAdapter   implements OnClickListener {
                  holder.author=(TextView)vi.findViewById(R.id.author);
                  holder.size=(TextView)vi.findViewById(R.id.size);
                  holder.type=(TextView)vi.findViewById(R.id.type);
-                  
+                 holder.mProgressbar1 = (ProgressBar)vi.findViewById(R.id.progressBar1); 
                 /************  Set holder with LayoutInflater ************/
                  vi.setTag( holder );
              }
@@ -91,8 +96,11 @@ public class CustomAdapter extends BaseAdapter   implements OnClickListener {
               
              if(data.size()<=0)
              {
-                 holder.name.setText("No Data");
-                  
+                 holder.name.setText("No Such File Found");
+                 holder.author.setText("Try using author's name");
+                 holder.type.setVisibility(View.INVISIBLE);
+                 holder.size.setVisibility(View.INVISIBLE);
+                 holder.mProgressbar1.setVisibility(View.GONE);
              }
              else
              {
@@ -106,6 +114,15 @@ public class CustomAdapter extends BaseAdapter   implements OnClickListener {
                   holder.author.setText( tempValues.getAuthors() );
                   holder.size.setText(tempValues.getSize());
                   holder.type.setText(tempValues.getType());
+                  holder.type.setVisibility(View.VISIBLE);
+                  holder.size.setVisibility(View.VISIBLE);
+                  if (tempValues.progress==0 || tempValues.progress==100) {
+                	  holder.mProgressbar1.setVisibility(View.GONE);
+                  } 
+                  else {
+                	  holder.mProgressbar1.setVisibility(View.VISIBLE);
+                	  holder.mProgressbar1.setProgress(tempValues.getProgress());
+                  }
 //                   holder.image.setImageResource(
 //                               res.getIdentifier(
 //                               "com.androidexample.customlistview:drawable/"+tempValues.getImage()
@@ -115,6 +132,9 @@ public class CustomAdapter extends BaseAdapter   implements OnClickListener {
  
                   vi.setOnClickListener(new OnItemClickListener( position ));
              }
+             Animation animation = AnimationUtils.loadAnimation(activity, (position > lastPosition) ? R.anim.up_from_bottom : R.anim.down_from_top);
+             vi.startAnimation(animation);
+             lastPosition = position;
              return vi;
          }
           
