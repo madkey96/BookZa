@@ -54,13 +54,43 @@ public class MainActivity extends Activity {
 	public MainActivity CustomListView = null;
 	ArrayList<book> books = new ArrayList<book>();
 	String LocationHeader;
+	File direct;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
+		direct = new File(Environment.getExternalStorageDirectory() + "/BookZa");
+		File localBooks[] = direct.listFiles();
+		
+		if (!direct.exists()) {
+			direct.mkdirs();
+		}
+
+		for (int i = 0; i < localBooks.length; i++) {
+			book tempValues = new book();
+			String fullname = localBooks[i].getName();
+			tempValues.setName(fullname.substring(0, fullname.indexOf(".")));
+			tempValues.setType(fullname.substring(fullname.indexOf(".") + 1,
+					fullname.length()));
+			long size = localBooks[i].length();
+			size = size / (1000 * 1000);
+			tempValues.setSize(String.valueOf(size) + " MB");
+			tempValues.setAuthors("Unkonwn");
+			books.add(tempValues);
+		}
+
 		CustomListView = this;
+
+		list = (ListView) findViewById(R.id.list); // List defined in XML (
+		// See Below )
+		Resources res = getResources();
+		/**************** Create Custom Adapter *********/
+		adapter = new CustomAdapter(CustomListView, books, res);
+		list.addHeaderView(new View(CustomListView));
+		list.addFooterView(new View(CustomListView));
+		list.setAdapter(adapter);
 		this.getWindow().setSoftInputMode(
 				WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 		editView = (EditText) findViewById(R.id.edit_message);
@@ -189,15 +219,7 @@ public class MainActivity extends Activity {
 
 		@Override
 		protected void onPostExecute(Void result) {
-			Resources res = getResources();
-			list = (ListView) findViewById(R.id.list); // List defined in XML (
-														// See Below )
-
-			/**************** Create Custom Adapter *********/
-			adapter = new CustomAdapter(CustomListView, books, res);
-			list.addHeaderView(new View(CustomListView));
-			list.addFooterView(new View(CustomListView));
-			list.setAdapter(adapter);
+			adapter.notifyDataSetChanged();
 			mProgressDialog.dismiss();
 		}
 	}
@@ -206,13 +228,16 @@ public class MainActivity extends Activity {
 		book tempValues = (book) books.get(mPosition);
 		// Toast.makeText(CustomListView,tempValues.getDlink()+"\n"+tempValues.getLink(),
 		// Toast.LENGTH_LONG).show();
-		File direct = new File(Environment.getExternalStorageDirectory()
-				+ "/BookZa");
-
-		if (!direct.exists()) {
-			direct.mkdirs();
-		}
 		// new getUrl().execute(tempValues);
+		
+		File test = new File(direct.getAbsolutePath()+"/"+tempValues.getName()+"."+tempValues.getType());
+		Log.d("Dirname",direct.getAbsolutePath()+tempValues.getName()+"."+tempValues.getType() );
+		if(test.exists()) {
+			Toast.makeText(CustomListView,"File exists",
+					 Toast.LENGTH_LONG).show();
+		}
+		else {
+		if(tempValues.dlink!=null) {
 		downloadmanager = (DownloadManager) getSystemService(servicestring);
 		Uri uri = Uri.parse(tempValues.dlink);
 		DownloadManager.Request request = new Request(uri);
@@ -275,7 +300,8 @@ public class MainActivity extends Activity {
 
 			}
 		}).start();
-
+		}
+		}
 	}
 
 	private class getUrl extends AsyncTask<book, Void, Void> {
